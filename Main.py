@@ -1,6 +1,7 @@
 import sys
 import signal
 import WebRenderer
+import WikiData
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -12,7 +13,7 @@ class WikiGame:
 		self.app = QApplication(sys.argv)
 		signal.signal(signal.SIGINT, signal.SIG_DFL)
 		self.webrender = WebRenderer()
-
+		self.wikidb = WikiData()
 
 if __name__ == '__main__':
 	game = WikiGame()
