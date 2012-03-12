@@ -2,40 +2,40 @@ import json
 import shelve
 import string
 import urllib
+import random
 
 DEBUG=True
 
-'''
-Provides methods for easily manipuating data from Wikipedia.
-Uses the API at http://en.wikipedia.org/w/api.php.
-'''
 class WikiData:
     '''
-    Initializes the WikiData class
+    Provides methods for easily manipuating data from Wikipedia.
+    Uses the API at http://en.wikipedia.org/w/api.php.
+    NEED - refactor code so that not all methods show up as public, try/catch statements for queryBD, text playing(?)
     '''
     def __init__(self, name='wikiCache'):
+        '''
+        Initializes the WikiData class
+        '''
         self.initializeDB(name)
         
-    '''
-    Initializes the database. Creates the database file if needed, and loads it into the instance of the class.
-    *Private
-    @param name The name of the desired database to check/create
-    @return boolean Returns true if the database needed to be created.
-    NEED - error handling
-    '''
     def initializeDB(self, name):
+        '''
+        Initializes the database. Creates the database file if needed, and loads it into the instance of the class.
+        *Private
+        @param name The name of the desired database to check/create
+        @return boolean Returns true if the database needed to be created.
+        '''
         self.wikiCache = shelve.open(name)
         if self.wikiCache.get('WhereInWiki',None)==None:
             self.wikiCache['WhereInWiki'] = self.getAllCountries()
             self.wikiCache.sync()
 
-    '''
-    Queries the database for a specific entry, adding it if need be.
-    *Public
-    @param query A article to query in the database
-    NEED - error handling
-    '''
     def queryDB(self, query):
+        '''
+        Queries the database for a specific entry, adding it if need be.
+        *Public
+        @param query A article to query in the database
+        '''
         query = query.encode('utf-8')
         if query=='WhereInWiki' and self.wikiCache.get('WhereInWiki',None)==None:
             self.wikiCache['WhereInWiki'] = self.getAllCountries()
@@ -48,19 +48,20 @@ class WikiData:
                 }
         return self.wikiCache.get(str(query),None)
     
-    '''
-    Closes the class, properly storing the cache.
-    *Public
-    '''
     def close(self):
+        '''
+        Closes the class, properly storing the cache.
+        *Public
+        '''
         self.wikiCache.close()
     
-    '''
-    Gets the set of all countries and adds them to the database for future use.
-    *Private
-    '''
     @staticmethod
     def getAllCountries():
+        '''
+        Gets the set of most countries (169/~196).
+        @return a sorted list of country names (in utf-8)
+        *Private
+        '''
         countries = set([])
         countries.update( WikiData.getArticleLinks('Category:Northern_American_countries','pages') )
         countries.update( WikiData.getArticleLinks('Category:Central_American_countries','pages') )
@@ -82,21 +83,21 @@ class WikiData:
         countries.discard('List of sovereign states and dependent territories in Europe')
         countries.discard('European microstates')
         countries.discard('List of Middle East countries by population')
+        countries = list(countries)
+        countries.sort()
         return countries
     
-    
-    '''
-    Returns a the requested query type on the given article.
-    *Private
-    @param type the type of links that you want ('forward', 'backward', 'images', 'pages', 'categories')
-    @param article The name of the article (with or without whitespace)
-    @param cont the entire string nested in query continue(None by default)
-    @return a list of all of the desired links
-    NEED error handling, continuation
-    '''
     @staticmethod
     def getArticleLinks(article, type, cont=None, limit='500', format='json'):
-#        article = article.encode('ascii')
+        '''
+        Returns a the requested query type on the given article.
+        *Private
+        @param type the type of links that you want ('forward', 'backward', 'images', 'pages', 'categories')
+        @param article The name of the article (with or without whitespace)
+        @param cont the entire string nested in query continue(None by default)
+        @return a list of all of the desired links
+        NEED error handling, continuation(unicode is making this annoying, is 500 okay?)
+        '''
         urlTemplate = string.Template('http://en.wikipedia.org/w/api.php?action=query$t$a$l$f$c$o') #$t=type, $a = article, $l = limit, $f=format, $c=continue, $o=other
         if type=='forward':
             ns = 0
@@ -185,16 +186,16 @@ class WikiData:
             return data
         if c!=None:
             return data 
-    
-    '''
-    Parses the given JSON data to extract the desired links
-    *Private
-    @param text the text that is the JSON data
-    @param ns the ns number corresponding to the desired type of data (0 for article names, 6 for image names)
-    @return a list containing the list of elements (index 0) and continue URL (index 1, None if not needed)
-    '''
+
     @staticmethod
     def parseWikiJson(jsonData, ns, type):
+        '''
+        Parses the given JSON data to extract the desired links
+        *Private
+        @param text the text that is the JSON data
+        @param ns the ns number corresponding to the desired type of data (0 for article names, 6 for image names)
+        @return a list containing the list of elements (index 0) and continue URL (index 1, None if not needed)
+        '''
         jsonDict = json.loads(jsonData)
         if type=='pages':
             cont = jsonDict.get('query-continue',None)
@@ -245,36 +246,54 @@ class WikiData:
                 if elem.get('ns', None)==ns
                 ]
         if cont!=None:
-            print 'C:',cont.encode('utf-8')
+            pass
+#            print 'C:',cont.encode('utf-8')
         return [data,cont]
     
     def initializeGame(self):
+        '''
+        Returns all the needed information to start the game
+        @return a list of the form [ Carmen's location , [clues] , [ list of clippings ] ]
+        '''
         country = self.chooseCountry()
         clues = self.chooseClues(country)
         clippings = self.getClippings(country)
         return [country, clues, clippings]
     
-    '''
-    Chooses a random country from the list of possibilities
-    *Private
-    '''
     def chooseCountry(self):
-        pass
+        '''
+        Chooses a random country from the list of possibilities
+        *Private
+        @return a unicode string of the country name
+        NEED - Testing
+        '''
+        countries = queryDB('WhereInWiki')
+        return random.choice(countries)
     
-    '''
-    Gets the clues based on a specific country
-    *Private
-    '''
     def chooseClues(self, article):
-        pass
+        '''
+        Gets the clues based on a specific country
+        *Private
+        NEED - Testing
+        '''
+        countries = queryDB(article)
+        back = countries.get('backward')
+        if back<=9:
+            return back #probably raise error later, that way we can guarentee 9
+        else:
+            clues = []
+            while len(clues)<9:
+                c = random.choice(back)
+                if c not in clues: clues.append(c)
+            return clues
     
-    '''
-    Checks whether an article is a person. Some error is possible, because Wikipedia doesn't have a People tag
-    @return a boolean representing if article is a person
-    *Private (unless needed for some other reason than clues)
-    NEED - Testing
-    '''
     def isPerson(self, article):
+        '''
+        Checks whether an article is a person. Some error is possible, because Wikipedia doesn't have a People tag
+        @return a boolean representing if article is a person
+        *Private (unless needed for some other reason than clues)
+        NEED - Testing, better metrics?
+        '''
         cats = self.queryDB(article).get('categories', None)
         if a != None:
             for e in cats:
@@ -283,15 +302,15 @@ class WikiData:
         else:
             return False
     
-    '''
-    Determines how far away two articles are in Wikipedia. Some error is possible, depending on continuation, and backlinks
-    @param art1 the query article (i.e. the country they guessed)
-    @param art2 the destination article (i.e. the Country they are trying to guess)
-    @returns a integer representing how how away they are (0: same article, 1: one away, 2: more than two away)
-    *Public
-    NEED - testing (maybe need unicode encodings in query for accuracy, works for ascii)
-    '''
     def distanceFrom(self, art1, art2):
+        '''
+        Determines how far away two articles are in Wikipedia. Some error is possible, depending on continuation, and backlinks
+        @param art1 the query article (i.e. the country they guessed)
+        @param art2 the destination article (i.e. the Country they are trying to guess)
+        @returns a integer representing how how away they are (0: same article, 1: one away, 2: more than two away)
+        *Public
+        NEED - testing (maybe need unicode encodings in query for accuracy, works for ascii)
+        '''
         if art1==art2:
             return 0
         else:
@@ -301,30 +320,50 @@ class WikiData:
             b2 = self.queryDB(art1).get('backward',None)
             if b2!=None and (art1 in b2):
                 return 1
-            return 2
+            if f1!=None and b2!=None:
+                s = set(b2)
+                for e in f1:
+                    if e in s:
+                        return 2
+            return 3
         
     
-    '''
-    Gets text clippings from forward links to an article
-    *Public
-    @returns a list [ getClip1, getClip2, getClip3 ], where each getClipI is list from getClip
-    '''
     def chooseClippings(self, article):
+        '''
+        Gets clippings from forward links to an article
+        *Public
+        @returns a dictionary {article1:getClip1, article2:getClip2, article3:getClip3}, where each getClipI is list from getClip
+        NEED - Testing, ignore articles with name of country in it?
+        '''
+        countries = queryDB(article)
+        forward = countries.get('forward')
+        clues = dict([])
+        if forward<=3:
+            for f in forward: clues[f.encode('utf-8')] = getClip(c)
+            return forward #probably raise error later, that way we can guarentee 9
+        else:
+            while len(clues)<3:
+                c = random.choice(forward)
+                if c not in clues:
+                    clues[c.encode('utf-8')] = getClip(c)
+            return clues
         pass
-    
-    '''
-    Gets text clippings from forward links to an article
-    *Public
-    @returns a list [text, image_name]
-    '''
+      
     def getClip(self, article):
+        '''
+        Gets clippings from a specific article
+        *Private
+        @returns a list [text, image_name]
+        NEED to implemet
+        '''
+        return []
         pass
     
-    '''
-    Provides a unique representation of the shelf
-    *Public, but ~3000 pages worth of printing, don't use.
-    '''
     def __repr__(self):
+        '''
+        Provides a unique representation of the shelf
+        *Public, but ~3000 pages worth of printing, don't use.
+        '''
         for e in self.wikiCache.get('WhereInWiki',None):
             print e.encode('utf-8')
             dicts = self.wikiCache.get(e.encode('utf-8'))
@@ -334,11 +373,11 @@ class WikiData:
                     print '\t\t',t.encode('utf-8')
         return ''
     
-    '''
-    Provides a unique representation of the shelf
-    *Public, but ~3000 pages worth of printing, don't use.
-    '''
     def __str__(self):
+        '''
+        Provides a unique representation of the shelf
+        *Public, but ~3000 pages worth of printing, don't use.
+        '''
         return self.__repr__()
     
 if __name__=='__main__':
@@ -346,12 +385,8 @@ if __name__=='__main__':
     if PLAY:
         pass
     else:
-        w = WikiData()
+        w = WikiData('hi')
         for c in w.wikiCache.get('WhereInWiki'):
             print c.encode('utf-8')
             w.queryDB(c)
         w.close()
-        
-
-#NOTES
-#    If forward link start with + or . just ignore
