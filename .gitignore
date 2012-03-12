@@ -4,3 +4,4 @@
 *.out
 *pyc
 .DS_Store
+wikiCache
