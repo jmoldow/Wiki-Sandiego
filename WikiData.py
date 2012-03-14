@@ -3,6 +3,8 @@ import shelve
 import string
 import urllib
 import random
+import warnings
+import re
 
 DEBUG=True
 
@@ -63,17 +65,17 @@ class WikiData:
         *Private
         '''
         countries = set([])
-        countries.update( WikiData.getArticleLinks('Category:Northern_American_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:Central_American_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:South_American_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:European_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:Southeast_Asian_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:East_Asian_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:African_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:Middle_Eastern_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:Western_Asian_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:South_Asian_countries','pages') )
-        countries.update( WikiData.getArticleLinks('Category:Near_Eastern_countries','pages') )
+        countries.update( self.getArticleLinks('Category:Northern_American_countries','pages') )
+        countries.update( self.getArticleLinks('Category:Central_American_countries','pages') )
+        countries.update( self.getArticleLinks('Category:South_American_countries','pages') )
+        countries.update( self.getArticleLinks('Category:European_countries','pages') )
+        countries.update( self.getArticleLinks('Category:Southeast_Asian_countries','pages') )
+        countries.update( self.getArticleLinks('Category:East_Asian_countries','pages') )
+        countries.update( self.getArticleLinks('Category:African_countries','pages') )
+        countries.update( self.getArticleLinks('Category:Middle_Eastern_countries','pages') )
+        countries.update( self.getArticleLinks('Category:Western_Asian_countries','pages') )
+        countries.update( self.getArticleLinks('Category:South_Asian_countries','pages') )
+        countries.update( self.getArticleLinks('Category:Near_Eastern_countries','pages') )
         #Get rid of the following articles, not actually countries:
         countries.discard('List of sovereign states and dependent territories in Africa')
         countries.discard('Flags of Africa')
@@ -83,118 +85,131 @@ class WikiData:
         countries.discard('List of sovereign states and dependent territories in Europe')
         countries.discard('European microstates')
         countries.discard('List of Middle East countries by population')
+        countries.discard(None)
         countries = list(countries)
         countries.sort()
         return countries
     
-    @staticmethod
-    def getArticleLinks(article, type, cont=None, limit='500', format='json'):
+    def getArticleLinks(self, article, type, cont=None, limit='500', format='json'):
         '''
         Returns a the requested query type on the given article.
         *Private
-        @param type the type of links that you want ('forward', 'backward', 'images', 'pages', 'categories')
+        @param type the type of links that you want ('forward', 'backward', 'images', 'pages', 'categories', 'encode')
         @param article The name of the article (with or without whitespace)
         @param cont the entire string nested in query continue(None by default)
         @return a list of all of the desired links
         NEED error handling, continuation(unicode is making this annoying, is 500 okay?)
         '''
-        urlTemplate = string.Template('http://en.wikipedia.org/w/api.php?action=query$t$a$l$f$c$o') #$t=type, $a = article, $l = limit, $f=format, $c=continue, $o=other
-        if type=='forward':
-            ns = 0
-            if cont==None: urlName = urlTemplate.substitute(
-                t='&prop=links',
-                a='&titles='+article,
-                l='&pllimit='+limit,
-                f='&format='+format,
-                c='',
-                o='')
-            else: urlName = urlTemplate.substitute(
-                t='&prop=links',
-                a='&titles='+article,
-                l='&pllimit='+limit,
-                f='&format='+format,
-                c='&plcontinue='+cont,
-                o='')
-        if type=='backward':
-            ns = 0
-            if cont==None: urlName = urlTemplate.substitute(
-                t='&list=backlinks',
-                a='&bltitle='+article,
-                l='&bllimit='+limit,
-                f='&format='+format,
-                c='',
-                o='')
-            else: urlName = urlTemplate.substitute(
-                t='&list=backlinks',
-                a='&bltitle='+article,
-                l='&bllimit='+limit,
-                f='&format='+format,
-                c='&blcontinue='+cont,
-                o='')
-        if type=='images':
-            ns = 6
-            if cont==None: urlName = urlTemplate.substitute(
-                t='&prop=images',
-                a='&titles='+article,
-                l='&imlimit='+limit,
-                f='&format='+format,
-                c='',
-                o='')
-            else: urlName = urlTemplate.substitute(
-                t='&prop=images',
-                a='&titles='+article,
-                l='&imlimit='+limit,
-                f='&format='+format,
-                c='&imcontinue='+cont,
-                o='')
-        if type=='pages': #gets all pages in a category page, not subcategories
-            ns = 0
-            if cont==None: urlName = urlTemplate.substitute(
-                t='&list=categorymembers',
-                a='&cmtitle='+article,
-                l='&cmlimit='+limit,
-                f='&format='+format,
-                c='',
-                o='&cmtype=page')
-            else: urlName = urlTemplate.substitute(
-                t='&list=categorymembers',
-                a='&cmtitle='+article,
-                l='&cmlimit='+limit,
-                f='&format='+format,
-                c='&cmcontinue='+cont,
-                o='&cmtype=page')
-        if type=='categories':
-            ns=14
-            if cont==None: urlName = urlTemplate.substitute(
-                t='&prop=categories',
-                a='&titles='+article,
-                l='&cllimit='+limit,
-                f='&format='+format,
-                c='',
-                o='')
-            else: urlName = urlTemplate.substitute(
-                t='&prop=categories',
-                a='&titles='+article,
-                l='&cllimit='+limit,
-                f='&format='+format,
-                c='clcontinue='+cont,
-                o='')
-        jsonData = urllib.urlopen(urlName).read()
-        [data, c] = WikiData.parseWikiJson(jsonData, ns, type)
-        data.sort() #testing
-        if c==None:
-            return data
-        if c!=None:
-            return data 
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            if article.encode('utf-8')==article: #Gets rid of countries with odd characters
+                urlTemplate = string.Template('http://en.wikipedia.org/w/api.php?action=query$t$a$l$f$c$o') #$t=type, $a = article, $l = limit, $f=format, $c=continue, $o=other
+                if type=='forward':
+                    ns = 0
+                    if cont==None: urlName = urlTemplate.substitute(
+                        t='&prop=links',
+                        a='&titles='+article,
+                        l='&pllimit='+limit,
+                        f='&format='+format,
+                        c='',
+                        o='')
+                    else: urlName = urlTemplate.substitute(
+                        t='&prop=links',
+                        a='&titles='+article,
+                        l='&pllimit='+limit,
+                        f='&format='+format,
+                        c='&plcontinue='+cont,
+                        o='')
+                if type=='backward':
+                    ns = 0
+                    if cont==None: urlName = urlTemplate.substitute(
+                        t='&list=backlinks',
+                        a='&bltitle='+article,
+                        l='&bllimit='+limit,
+                        f='&format='+format,
+                        c='',
+                        o='')
+                    else: urlName = urlTemplate.substitute(
+                        t='&list=backlinks',
+                        a='&bltitle='+article,
+                        l='&bllimit='+limit,
+                        f='&format='+format,
+                        c='&blcontinue='+cont,
+                        o='')
+                if type=='images':
+                    ns = 6
+                    if cont==None: urlName = urlTemplate.substitute(
+                        t='&prop=images',
+                        a='&titles='+article,
+                        l='&imlimit='+limit,
+                        f='&format='+format,
+                        c='',
+                        o='')
+                    else: urlName = urlTemplate.substitute(
+                        t='&prop=images',
+                        a='&titles='+article,
+                        l='&imlimit='+limit,
+                        f='&format='+format,
+                        c='&imcontinue='+cont,
+                        o='')
+                if type=='pages': #gets all pages in a category page, not subcategories
+                    ns = 0
+                    if cont==None: urlName = urlTemplate.substitute(
+                        t='&list=categorymembers',
+                        a='&cmtitle='+article,
+                        l='&cmlimit='+limit,
+                        f='&format='+format,
+                        c='',
+                        o='&cmtype=page')
+                    else: urlName = urlTemplate.substitute(
+                        t='&list=categorymembers',
+                        a='&cmtitle='+article,
+                        l='&cmlimit='+limit,
+                        f='&format='+format,
+                        c='&cmcontinue='+cont,
+                        o='&cmtype=page')
+                if type=='categories':
+                    ns=14
+                    if cont==None: urlName = urlTemplate.substitute(
+                        t='&prop=categories',
+                        a='&titles='+article,
+                        l='&cllimit='+limit,
+                        f='&format='+format,
+                        c='',
+                        o='')
+                    else: urlName = urlTemplate.substitute(
+                        t='&prop=categories',
+                        a='&titles='+article,
+                        l='&cllimit='+limit,
+                        f='&format='+format,
+                        c='clcontinue='+cont,
+                        o='')
+                if type=='export':
+                    ns=0
+                    urlName = urlTemplate.substitute(
+                        t='&export',
+                        a='&titles='+article,
+                        l='',
+                        f='&format='+format,
+                        c='',
+                        o='')
+                jsonData = urllib.urlopen(urlName).read()
+                [data, c] = self.parseWikiJson(jsonData, ns, type, article)
+#                data.sort() 
+                return data
+#                if c==None:
+#                    return data
+#                if c!=None:
+#                    return data 
 
-    @staticmethod
-    def parseWikiJson(jsonData, ns, type):
+    def parseWikiJson(self, jsonData, ns, type, article=''):
         '''
         Parses the given JSON data to extract the desired links
         *Private
         @param text the text that is the JSON data
-        @param ns the ns number corresponding to the desired type of data (0 for article names, 6 for image names)
+        @param ns the ns number corresponding to the desired type of data (0 for article names, 6 for image names) [Ignored if type==encode]
         @return a list containing the list of elements (index 0) and continue URL (index 1, None if not needed)
+        NEED - get rid of annoying unicode
         '''
         jsonDict = json.loads(jsonData)
         if type=='pages':
@@ -204,7 +219,7 @@ class WikiData:
             data = [
                 elem.get('title') 
                 for elem in jsonDict.get('query', None).get('categorymembers', None) 
-                if elem.get('ns', None)==ns
+                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
                 ]
         elif type=='forward':
             cont = jsonDict.get('query-continue',None)
@@ -214,7 +229,7 @@ class WikiData:
             data = [
                 elem.get('title')
                 for elem in jsonDict.get('query', None).get('pages', None).get(artNum, None).get('links')
-                if (elem.get('ns', None)==ns and elem.get('title',None)[0]!='+' and elem.get('title',None)[0]!='.')
+                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title')  and elem.get('title',None)[0]!='+' and elem.get('title',None)[0]!='.')
                 ]
         elif type=='backward':
             cont = jsonDict.get('query-continue',None)
@@ -223,7 +238,7 @@ class WikiData:
             data = [
                 elem.get('title') 
                 for elem in jsonDict.get('query', None).get('backlinks') 
-                if elem.get('ns', None)==ns
+                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
                 ]
         elif type=='images':
             cont = jsonDict.get('query-continue',None)
@@ -233,7 +248,7 @@ class WikiData:
             data = [
                 elem.get('title') 
                 for elem in jsonDict.get('query', None).get('pages').get(artNum, None).get('images', None) 
-                if elem.get('ns', None)==ns
+                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
                 ]
         elif type=='categories':
             cont = jsonDict.get('query-continue',None)
@@ -243,9 +258,17 @@ class WikiData:
             data = [
                 elem.get('title') 
                 for elem in jsonDict.get('query', None).get('pages', None).get(artNum, None).get('categories', None) 
-                if elem.get('ns', None)==ns
+                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
                 ]
-        if cont!=None:
+        elif type=='export':
+            cont = jsonDict.get('query-continue',None)
+            data = jsonDict.get('query', None).get('export', None).get('*', None)
+            end = data.find("==") #finds end of introduction
+            start = data.rfind("'''",0,end)
+            start = data.rfind("'''",0,start) #accounts for countries who name is not the exact title
+            data = data[start: end]
+            print data.encode('utf-8')
+        if cont!=None: #ignore continuations for now
             pass
 #            print 'C:',cont.encode('utf-8')
         return [data,cont]
@@ -279,7 +302,7 @@ class WikiData:
         countries = queryDB(article)
         back = countries.get('backward')
         if back<=9:
-            return back #probably raise error later, that way we can guarentee 9
+            return back #probably raise error later, that way we can guarentee 9, shouldn't actually happen
         else:
             clues = []
             while len(clues)<9:
@@ -309,7 +332,7 @@ class WikiData:
         @param art2 the destination article (i.e. the Country they are trying to guess)
         @returns a integer representing how how away they are (0: same article, 1: one away, 2: more than two away)
         *Public
-        NEED - testing (maybe need unicode encodings in query for accuracy, works for ascii)
+        NEED - testing (maybe need unicode encodings in query for accuracy, works for ascii), do we even need this currently?
         '''
         if art1==art2:
             return 0
@@ -340,7 +363,7 @@ class WikiData:
         clues = dict([])
         if forward<=3:
             for f in forward: clues[f.encode('utf-8')] = getClip(c)
-            return forward #probably raise error later, that way we can guarentee 9
+            return forward #probably raise error later, that way we can guarentee 9, doubtful will ever happen
         else:
             while len(clues)<3:
                 c = random.choice(forward)
@@ -354,9 +377,20 @@ class WikiData:
         Gets clippings from a specific article
         *Private
         @returns a list [text, image_name]
-        NEED to implemet
+        NEED to implement
         '''
+        text = self.getArticleLinks(article, 'export')
+# = "'''[^']*'''" #'''title'''->Redacted (just start from here, delete everything before it)
+#        citationsRegEx= "(&amp;lt;ref&amp;gt; | \) )? \{\{[^}]*\}\} (&amp;lt;ref&amp;gt; | \) )?"# ({{citation_data}})->''
+#        linkRegEx = "\[\[ [^\]] \]\]" #[[article]]->article #if [[name_of_wiki | word]] use word
+        #find(	sub[, start[, end]]) Return the lowest index in the string where substring sub is found, such that sub is contained in the range [start, end]. Optional arguments start and end are interpreted as in slice notation. Return -1 if sub is not found. 
+        #replace(	old, new[, count]) Return a copy of the string with all occurrences of substring old replaced by new. If the optional argument count is given, only the first count occurrences are replaced.
+#        text = '[REDACTED]'+text[text.find("'''")+len(article)+3, text.find("===")] #
+#        text = text.replace('[[','') 
+#        text = text.replace(']]','')
+
         return []
+        
         pass
     
     def __repr__(self):
@@ -385,8 +419,18 @@ if __name__=='__main__':
     if PLAY:
         pass
     else:
-        w = WikiData('hi')
+        w = WikiData('test')
         for c in w.wikiCache.get('WhereInWiki'):
-            print c.encode('utf-8')
-            w.queryDB(c)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                if c.encode('utf-8')==c:
+                    print '\n',c
+                    w.getClip(c)
+                
+                
+#        for c in w.wikiCache.get('WhereInWiki'):
+#            if c.encode('utf-8')!=c:
+#                pass
+#            else: print c
+#            w.queryDB(c)
         w.close()
