@@ -10,7 +10,14 @@ from PyQt4.QtNetwork import *
 
 class Game:
     def __init__(self):
+        self.wd = WikiData()
         self.restart()
+
+    def showWikipedia(self):
+        wv = QWebView()
+
+        wv.setWindowTitle("Wikipedia")
+        wv.setUrl(QUrl("http://en.wikipedia.org/wiki/"))
 
     def showClue(self, num):
         clue = self.clueTitles[num]
@@ -28,11 +35,12 @@ class Game:
             image = clip[1][0]
         wv.setUrl(QUrl("http://en.wikipedia.org/wiki/" + clip[0]))
         return wv
-		
+
 
     def checkAnswer(self, answer):
         loc =  [c for c in self.location.lower() if 'a'<=c<='z']
         loc2 = [c for c in        answer.lower() if 'a'<=c<='z']
+        self.tries -= 1
         return loc == loc2
 
     def numClues(self):
@@ -41,9 +49,12 @@ class Game:
     def numClippings(self):
         return len(self.clippings)
 
+    def guessesLeft(self):
+        return self.tries
+
     def restart(self):
-        self.wd = WikiData()
         [self.location, self.clueTitles, self.clippings] = self.wd.initializeGame()
+        self.tries = 3
 
 if __name__=="__main__":
     a = QApplication([''])
@@ -55,7 +66,7 @@ if __name__=="__main__":
               "\tTo look at a clue, type C# (Where # is between 1 and " + str(g.numClues()) + ")\n" + \
               "\tTo look at a clipping, type L# (Where # is between 1 and " + str(g.numClippings()) + ")\n" + \
               "\tIf you know where the crook is, type A * (Where * is the location of the crook)"
-              
+
         inp = raw_input(">")
         if inp[0].upper() == 'Q':
             break
@@ -76,8 +87,12 @@ if __name__=="__main__":
                 print "Unfortunately, there seems to be another crook on the loose."
                 g.restart()
             else:
-                print "No one was there when we went to check, stop wasting our time."
+                if g.guessesLeft() > 0:
+                    print "No one was there when we went to check, stop wasting our time. (" + str(g.guessesLeft()) + " Tries Left)"
+                else:
+                    print "The art has been STOLEN!!! You've lost. However, there's another crook you may be able to catch."
+                    g.restart()
         else:
             print "What did you say?" + g.location
-            
-    
+
+
