@@ -19,7 +19,7 @@ class WikiData:
         Initializes the WikiData class
         '''
         self.initializeDB(name)
-        
+
     def initializeDB(self, name):
         '''
         Initializes the database. Creates the database file if needed, and loads it into the instance of the class.
@@ -49,14 +49,14 @@ class WikiData:
                 'categories': self.getArticleLinks(query,'categories')
                 }
         return self.wikiCache.get(str(query),None)
-    
+
     def close(self):
         '''
         Closes the class, properly storing the cache.
         *Public
         '''
         self.wikiCache.close()
-    
+
     @staticmethod
     def getAllCountries():
         '''
@@ -272,7 +272,7 @@ class WikiData:
             pass
 #            print 'C:',cont.encode('utf-8')
         return [data,cont]
-    
+
     def initializeGame(self):
         '''
         Returns all the needed information to start the game
@@ -280,9 +280,9 @@ class WikiData:
         '''
         country = self.chooseCountry()
         clues = self.chooseClues(country)
-        clippings = self.getClippings(country)
+        clippings = self.chooseClippings(country)
         return [country, clues, clippings]
-    
+
     def chooseCountry(self):
         '''
         Chooses a random country from the list of possibilities
@@ -290,16 +290,16 @@ class WikiData:
         @return a unicode string of the country name
         NEED - Testing
         '''
-        countries = queryDB('WhereInWiki')
+        countries = self.queryDB('WhereInWiki')
         return random.choice(countries)
-    
+
     def chooseClues(self, article):
         '''
         Gets the clues based on a specific country
         *Private
         NEED - Testing
         '''
-        countries = queryDB(article)
+        countries = self.queryDB(article)
         back = countries.get('backward')
         if back<=9:
             return back #probably raise error later, that way we can guarentee 9, shouldn't actually happen
@@ -309,7 +309,7 @@ class WikiData:
                 c = random.choice(back)
                 if c not in clues: clues.append(c)
             return clues
-    
+
     def isPerson(self, article):
         '''
         Checks whether an article is a person. Some error is possible, because Wikipedia doesn't have a People tag
@@ -324,7 +324,7 @@ class WikiData:
                     return True
         else:
             return False
-    
+
     def distanceFrom(self, art1, art2):
         '''
         Determines how far away two articles are in Wikipedia. Some error is possible, depending on continuation, and backlinks
@@ -349,8 +349,8 @@ class WikiData:
                     if e in s:
                         return 2
             return 3
-        
-    
+
+
     def chooseClippings(self, article):
         '''
         Gets clippings from forward links to an article
@@ -358,20 +358,20 @@ class WikiData:
         @returns a dictionary {article1:getClip1, article2:getClip2, article3:getClip3}, where each getClipI is list from getClip
         NEED - Testing, ignore articles with name of country in it?
         '''
-        countries = queryDB(article)
+        countries = self.queryDB(article)
         forward = countries.get('forward')
         clues = dict([])
         if forward<=3:
-            for f in forward: clues[f.encode('utf-8')] = getClip(c)
+            for f in forward: clues[f.encode('utf-8')] = self.getClip(c)
             return forward #probably raise error later, that way we can guarentee 9, doubtful will ever happen
         else:
             while len(clues)<3:
                 c = random.choice(forward)
                 if c not in clues:
-                    clues[c.encode('utf-8')] = getClip(c)
+                    clues[c.encode('utf-8')] = self.getClip(c)
             return clues
         pass
-      
+
     def getClip(self, article):
         '''
         Gets clippings from a specific article
@@ -392,7 +392,7 @@ class WikiData:
         return []
         
         pass
-    
+
     def __repr__(self):
         '''
         Provides a unique representation of the shelf
@@ -406,14 +406,14 @@ class WikiData:
                 for t in dicts.get(c,None):
                     print '\t\t',t.encode('utf-8')
         return ''
-    
+
     def __str__(self):
         '''
         Provides a unique representation of the shelf
         *Public, but ~3000 pages worth of printing, don't use.
         '''
         return self.__repr__()
-    
+
 if __name__=='__main__':
     PLAY = False
     if PLAY:
