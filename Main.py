@@ -21,6 +21,22 @@ cursor = None   # Mouse cursor. Needs to be global because of the unfortunate wa
 game = Game()   # Global variable that stores the game
 opened_windows = [] # List of windows that are (or have in the past been) opened. This is so that the displayed pop-ups aren't immediately destroyed by Python when the local variable goes out of scope
 
+colors = {} # A dictionary that maps labels for the different types of clickables to a tuple of their colors in the chromatic map
+colors['exit'] = ('00FF00',)
+colors['menu'] = ('FF0000',)
+colors['files'] = ('000088','008800','880000')
+colors['photos'] = ('FFFF88','FF0088','88FF00')
+colors['gun'] = ('FF8800',)
+colors['open_folder'] = ('8800FF',)
+colors['name_plate'] = ('FF88FF',)
+colors['globe'] = ('0088FF',)
+# colors['fox'] = ('00FF88',)
+
+all_colors = []
+for label in colors.keys():
+	for color in colors[label]:
+		all_colors.append(color)
+
 def mainPanelMouseMoveEvent(event):
 #
 # Creating a subclass of QWidget (which is what I wanted to do in order to override the default mouseMoveEvent method of the main_panel QWidget) apparently breaks the setStyleSheet method (which I need in order to set a background image, since I couldn't figure out any other way to do that). 
@@ -28,9 +44,9 @@ def mainPanelMouseMoveEvent(event):
 # TODO: Remove dirty hack.
 # jmoldow, 2012/03/15
 #
-	global main_panel, office_images, cursor
+	global main_panel, office_images, cursor, all_colors
 	color = getColor(event)
-	if ('office%s.png' % color) in office_images:   # if there is a background image overlay for that chromatic map color
+	if color in all_colors and ('office%s.png' % color) in office_images:   # if there is a background image overlay for that chromatic map color
 		setBackgroundImage(main_panel,'media/office_background_images/office%s.png' % color)	# overlay a new background image
 		cursor.setShape(Qt.PointingHandCursor)  # Change to the pointing hand cursor
 	else:
@@ -52,17 +68,6 @@ Function that returns the Hex string (without the leading 0x) of the color of th
 	global office_chromatic_map
 	pos = getPos(event)   # the position of the mouse, as a 2-tutple of integers
 	return ''.join(map(lambda x: ('0'+pyhex(int(x))[2:].upper())[-2:], office_chromatic_map.getpixel(pos)[0:3]))   # The Hex string (without the leading 0x) of the color of the chromatic map at that mouse position
-
-colors = {} # A dictionary that maps labels for the different types of clickables to a tuple of their colors in the chromatic map
-colors['exit'] = ('00FF00',)
-colors['menu'] = ('FF0000',)
-colors['files'] = ('000088','008800','880000')
-colors['photos'] = ('FFFF88','FF0088','88FF00')
-colors['gun'] = ('FF8800',)
-colors['open_folder'] = ('8800FF',)
-colors['name_plate'] = ('FF88FF',)
-colors['globe'] = ('0088FF',)
-colors['fox'] = ('00FF88',)
 
 def mainPanelMousePressEvent(event):
 # See my comments for mainPanelMouseMoveEvent
@@ -87,8 +92,8 @@ def mainPanelMousePressEvent(event):
 		pass
 	elif color in colors['globe']:
 		widget = game.showWikipedia()   # Clicking on the globe opens Wikipedia
-	elif color in colors['fox']:
-		pass
+	# elif color in colors['fox']:
+		# pass
 	else:
 		pass
 	if widget:  # If the clickable has a widget associated with it
