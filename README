@@ -1,3 +1,10 @@
+////////////////////////////////////////////////////////////////
+
+        Where in Wikipedia is Carmen Sandiego
+        (or Wiki Sandiego for short)
+
+////////////////////////////////////////////////////////////////
+
 This is the repository for our ``Where in Wiki is Carmen Sandiego''
 videogame for 6.073J Project 3 - Spring 2012.
 
@@ -7,6 +14,33 @@ Authors:
  * Dexter Cogswell <dexter_c@mit.edu>
  * Zandra Vinegar <ch3cooh@mit.edu>
 
+Attributions:
+ * Data and images from Wikipedia (http://en.wikipedia.org/wiki/Wikipedia:Copyrights).
+ * Theme and title are based on the game ``Where in the World Is Carmen Sandiego?''
+
+Project home page: <github.com/jmoldow/Wiki-Sandiego>
+Git repository: <github.com/jmoldow/Wiki-Sandiego.git>
+
+To run:
+$ python Main.py (for the GUI version; not yet complete)
+$ python Game.py (for the text-based version)
+
+Instructions:
+You are David A. Honig, an investigator in the International Art Crime Unit of
+the UN. In an unprecedented event, your unit has received 11 (22/2) messages from
+Cujo Sanfran, a famous Art Thief, clueing the locations where he will be pulling
+off a major heist in the coming days. It is up to you to stop him, before he steals
+the masterpieces from around the world.
+
+Instructions for the GUI and the text-based versions are different. Both sets of instructions
+are available within the respective version.
+
+Dependencies:
+ * Python 2.7 <http://python.org/download/releases/2.7.2/>
+ * SIP 4.13 <http://www.riverbankcomputing.co.uk/software/sip/download>
+ * PyQt4 <http://www.riverbankcomputing.co.uk/software/pyqt/download>
+ * Python Imaging Library (PIL) <http://www.pythonware.com/products/pil/>
+
 This code is free and open source. Anyone can view, download, and
 modify the code, but please let us know and attribute us.
 
@@ -14,3 +48,4 @@ Known bugs:
  * Game hangs if there is no internet connections.
  * Format of some text clippings in incorrect.
  * Database will sometimes be corrupted if not properly closed, delete the file wikicache and restart to resolve.
+ * The GUI version of the game is not yet complete.
