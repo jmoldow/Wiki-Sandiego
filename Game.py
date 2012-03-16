@@ -44,7 +44,7 @@ class Game:
         image = ""
         if len(clip[1]) > 0:
             image = clip[1][0]
-        wv.setUrl(QUrl("http://en.wikipedia.org/wiki/" + clip[0]))
+        wv.setUrl(QUrl("http://en.wikipedia.org/wiki/" + image))
         return mw
 
 
@@ -58,8 +58,6 @@ class Game:
         return len(self.clueTitles)
 
     def numClippings(self):
-
-
         return len(self.clippings)
 
     def guessesLeft(self):
@@ -101,14 +99,14 @@ def runGame():
         if r == total:
             print "Cujo has sent you messages indicating where he is going to strike. It's up to you"
         else:
-            print "Cujo has sent you another message indicating where he's going to strike next. It's up to you"            
+            print "Cujo has sent you another message indicating where he's going to strike next. It's up to you"
         print "to figure out where his next target is going to be."
         print "Good Luck!\n\n"
         gameOver = False
 
         printHelp(g)
         while not gameOver:
-            
+
             inp = raw_input(">") + " "
             if inp[0].upper() == 'Q':
                 r = 0
