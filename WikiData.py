@@ -244,11 +244,14 @@ class WikiData:
             if cont!=None:
                 cont = jsonDict.get('query-continue',None).get('images',None).get('imcontinue',None)
             artNum = jsonDict.get('query', None).get('pages', None).keys()[0]
-            data = [
-                elem.get('title') 
-                for elem in jsonDict.get('query', None).get('pages').get(artNum, None).get('images', None) 
-                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
-                ]
+            if jsonDict.get('query', None).get('pages').get(artNum, None).get('images', None)!=None:
+                data = [
+                    elem.get('title') 
+                    for elem in jsonDict.get('query', None).get('pages').get(artNum, None).get('images', None) 
+                    if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
+                    ]
+            else:
+                data=[]
         elif type=='categories':
             cont = jsonDict.get('query-continue',None)
             if cont!=None:
@@ -319,7 +322,7 @@ class WikiData:
             while len(clues)<9:
                 c = random.choice(back)
                 if c not in clues and self.checkCountry(article, c):
-                    print '\t',c.encode('utf-8')
+#                    print '\t',c.encode('utf-8')
                     clues.append(c)
             return clues
 
@@ -395,7 +398,8 @@ class WikiData:
         text = self.getArticleLinks(article, 'export')
         art = self.queryDB(article)
         images = art.get('images',None)
-        return [text, images[0]]
+        if images==[]: return [text, None]
+        else: return [text, images[0]]
 
     def __repr__(self):
         '''
@@ -419,17 +423,20 @@ class WikiData:
         return self.__repr__()
 
 if __name__=='__main__':
+    pass
     PLAY = False
     if PLAY:
         pass
     else:
-        w = WikiData('wikiwCache')
-        for c in w.wikiCache.get('WhereInWiki'):
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                if c.encode('utf-8')==c:
-                    print '\n',c
-                    w.chooseClues(c)
+        w = WikiData('test')
+        w.initializeGame()
+        
+#        for c in w.wikiCache.get('WhereInWiki'):
+#            with warnings.catch_warnings():
+#                warnings.simplefilter('ignore')
+#                if c.encode('utf-8')==c:
+#                    print '\n',c
+#                    w.chooseClues(c)
                 
                 
 #        for c in w.wikiCache.get('WhereInWiki'):
@@ -437,4 +444,4 @@ if __name__=='__main__':
 #                pass
 #            else: print c
 #            w.queryDB(c)
-        w.close()
+#        w.close()
