@@ -23,17 +23,60 @@ def mainPanelMouseMoveEvent(event):
 # TODO: Remove dirty hack.
 # jmoldow, 2012/03/15
 #
-	global office_chromatic_map, main_panel, office_images, cursor
-	pos = event.pos()   # the position of the mouse, as a QPoint
-	pos = (pos.x(), pos.y())	# the position of the mouse, as a 2-tutple of integers
-	color = ''.join(map(lambda x: ('0'+pyhex(int(x))[2:].upper())[-2:], office_chromatic_map.getpixel(pos)[0:3]))   # The Hex string (without the leading 0x) of the color of the chromatic map at that mouse position
+	global main_panel, office_images, cursor
+	color = getColor(event)
 	if ('office%s.png' % color) in office_images:   # if there is a background image overlay for that chromatic map color
 		setBackgroundImage(main_panel,'media/office_background_images/office%s.png' % color)	# overlay a new background image
 		cursor.setShape(Qt.PointingHandCursor)  # Change to the pointing hand cursor
 	else:
 		clearBackgroundImage(main_panel)	# clear the overlayed image, make the main_panel transparent
 		cursor.setShape(Qt.ArrowCursor) # Return to the default cursor
-	main_panel.setCursor(cursor)    # Reassign the cursor to the main_panel
+	main_panel.setCursor(cursor)	# Reassign the cursor to the main_panel
+
+def getColor(event):
+	'''
+Function that returns the Hex string (without the leading 0x) of the color of the chromatic map at the position of the mouse event.
+	'''
+	global office_chromatic_map
+	pos = event.pos()   # the position of the mouse, as a QPoint
+	pos = (pos.x(), pos.y())	# the position of the mouse, as a 2-tutple of integers
+	return ''.join(map(lambda x: ('0'+pyhex(int(x))[2:].upper())[-2:], office_chromatic_map.getpixel(pos)[0:3]))   # The Hex string (without the leading 0x) of the color of the chromatic map at that mouse position
+
+colors = {} # A dictionary that maps labels for the different types of clickables to a tuple of their colors in the chromatic map
+colors['exit'] = ('00FF00',)
+colors['menu'] = ('FF0000',)
+colors['files'] = ('000088','008800','880000')
+colors['photos'] = ('FFFF88','FF0088','88FF00')
+colors['gun'] = ('FF8800',)
+colors['open_folder'] = ('8800FF',)
+colors['name_plate'] = ('FF88FF',)
+colors['globe'] = ('0088FF',)
+colors['fox'] = ('00FF88',)
+
+def mainPanelMousePressEvent(event):
+# See my comments for mainPanelMouseMoveEvent
+	global main_panel, cursor
+	color = getColor(event)
+	if color in colors['exit']: # exit lamp
+		sys.exit()
+	elif color in colors['menu']: # main menu
+		pass
+	elif color in colors['files']:   # files
+		pass
+	elif color in colors['photos']:
+		pass
+	elif color in colors['gun']:
+		pass
+	elif color in colors['open_folder']:
+		pass
+	elif color in colors['name_plate']:
+		pass
+	elif color in colors['globe']:
+		pass
+	elif color in colors['fox']:
+		pass
+	else:
+		pass
 
 def setBackgroundImage(widget, url):
 	'''
@@ -87,6 +130,7 @@ class WikiGame:
 		self.main_panel.setMouseTracking(True)  # Makes it so that MouseMove events are triggered whenever the mouse moves, regardless of whether the button is being held.
 		self.main_panel.mouseMoveEvent = mainPanelMouseMoveEvent	# Set the above-defined function as a static object method. TODO: Remove dirty hack.
 		self.main_panel.setCursor(cursor)
+		self.main_panel.mousePressEvent = mainPanelMousePressEvent
 
 	def show(self):
 		self.page = QWebPage()
