@@ -9,3 +9,8 @@ Authors:
 
 This code is free and open source. Anyone can view, download, and
 modify the code, but please let us know and attribute us.
+
+Known bugs:
+ * Game hangs if there is no internet connections.
+ * Format of some text clippings in incorrect.
+ * Database will sometimes be corrupted if not properly closed, delete the file wikicache and restart to resolve.
