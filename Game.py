@@ -18,6 +18,7 @@ class Game:
 
         wv.setWindowTitle("Wikipedia")
         wv.setUrl(QUrl("http://en.wikipedia.org/wiki/"))
+        return wv
 
     def showClue(self, num):
         clue = self.clueTitles[num]
@@ -43,7 +44,7 @@ class Game:
         wv.setGeometry(IMAGE_RECT)
         image = ""
         if len(clip[1]) > 0:
-            image = clip[1][0]
+            image = clip[1][1]
         wv.setUrl(QUrl("http://en.wikipedia.org/wiki/" + image))
         return mw
 
