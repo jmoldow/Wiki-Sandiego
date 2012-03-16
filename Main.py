@@ -4,6 +4,7 @@ import sys
 import signal
 from WebRenderer import WebRenderer
 from WikiData import WikiData
+from Game import Game
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -15,6 +16,8 @@ office_chromatic_map = Image.open('media/office_background_images/officechromati
 main_panel = None   # Dirty hack to allow us access to the main_panel in the below functions. TODO: Remove dirty hack.
 office_images = os.listdir('media/office_background_images')	# A list of all of the images in the office_background_images directory
 cursor = None   # Mouse cursor. Needs to be global because of the unfortunate way that the main_panel is implemented. TODO: Remove dirty hack.
+game = Game()   # Global variable that stores the game
+opened_windows = [] # List of windows that are (or have in the past been) opened. This is so that the displayed pop-ups aren't immediately destroyed by Python when the local variable goes out of scope
 
 def mainPanelMouseMoveEvent(event):
 #
@@ -55,28 +58,32 @@ colors['fox'] = ('00FF88',)
 
 def mainPanelMousePressEvent(event):
 # See my comments for mainPanelMouseMoveEvent
-	global main_panel, cursor
+	global main_panel, cursor, game, opened_windows
 	color = getColor(event)
+	widget = None   # The widget returned by the clickable
 	if color in colors['exit']: # exit lamp
 		sys.exit()
 	elif color in colors['menu']: # main menu
-		pass
+		game.restart()  # Returning to the menu should restart the game. Later I will add the actual menu functionality.
 	elif color in colors['files']:   # files
-		pass
+		widget = game.showClue(colors['files'].index(color))    # Clicking on a folder returns a clue widget
 	elif color in colors['photos']:
-		pass
+		widget = game.showClipping(colors['photos'].index(color))   # Clicking on a photo returns a clipping widget
 	elif color in colors['gun']:
 		pass
 	elif color in colors['open_folder']:
-		pass
+		widget = game.showClue(4)   # The open folder was supposed to be special, but now it's not, so return a different clue widget
 	elif color in colors['name_plate']:
 		pass
 	elif color in colors['globe']:
-		pass
+		widget = game.showWikipedia()   # Clicking on the globe opens Wikipedia
 	elif color in colors['fox']:
 		pass
 	else:
 		pass
+	if widget:  # If the clickable has a widget associated with it
+		opened_windows.append(widget)   # Store the widget so it doesn't go out of scope
+		opened_windows[-1].show()   # show the widget
 
 def setBackgroundImage(widget, url):
 	'''
@@ -144,5 +151,5 @@ class WikiGame:
 		sys.exit(self.app.exec_())
 
 if __name__ == '__main__':
-	game = WikiGame()
-	game.show()
+	wikigame = WikiGame()
+	wikigame.show()
