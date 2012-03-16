@@ -26,15 +26,26 @@ class Game:
         wv.setUrl(QUrl("http://en.wikipedia.org/wiki/" + clue))
         return wv
 
-    def showClipping(self, num):
+    def showClipping(self, num, width=400, height=400):
         clip = self.clippings.items()[num]
-        wv = QWebView()
+        CLIPPING_RECT = QRect(QPoint(0,0), QPoint(width, height))
+        IMAGE_RECT = QRect(QPoint(0,0), QSize(width,3*height/4))
+        CAPT_RECT = QRect(QPoint(0, 3*height/4), QPoint(width, height))
+        mw = QWidget()
+        mw.setGeometry(CLIPPING_RECT)
+        mw.setWindowTitle(clip[0])
+        capt = QTextEdit(mw)
+        capt.setHtml(clip[0])
+        capt.setReadOnly(True)
+        capt.setGeometry(CAPT_RECT)
+        wv = QWebView(mw)
         wv.setWindowTitle(clip[0])
+        wv.setGeometry(IMAGE_RECT)
         image = ""
         if len(clip[1]) > 0:
             image = clip[1][0]
         wv.setUrl(QUrl("http://en.wikipedia.org/wiki/" + clip[0]))
-        return wv
+        return mw
 
 
     def checkAnswer(self, answer):
