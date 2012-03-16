@@ -56,9 +56,8 @@ class WikiData:
         *Public
         '''
         self.wikiCache.close()
-
-    @staticmethod
-    def getAllCountries():
+        
+    def getAllCountries(self):
         '''
         Gets the set of most countries (169/~196).
         @return a sorted list of country names (in utf-8)
@@ -196,20 +195,20 @@ class WikiData:
                 jsonData = urllib.urlopen(urlName).read()
                 [data, c] = self.parseWikiJson(jsonData, ns, type, article)
 #                data.sort() 
-                return data
 #                if c==None:
 #                    return data
 #                if c!=None:
 #                    return data 
 
-    def parseWikiJson(self, jsonData, ns, type, article=''):
+                return data
+    def parseWikiJson(self, jsonData, ns, type, article):
         '''
         Parses the given JSON data to extract the desired links
         *Private
         @param text the text that is the JSON data
         @param ns the ns number corresponding to the desired type of data (0 for article names, 6 for image names) [Ignored if type==encode]
         @return a list containing the list of elements (index 0) and continue URL (index 1, None if not needed)
-        NEED - get rid of annoying unicode
+        WANT - export to get rid of formatting
         '''
         jsonDict = json.loads(jsonData)
         if type=='pages':
@@ -238,7 +237,7 @@ class WikiData:
             data = [
                 elem.get('title') 
                 for elem in jsonDict.get('query', None).get('backlinks') 
-                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title') )
+                if (elem.get('ns', None)==ns and elem.get('title').encode('utf-8')==elem.get('title'))
                 ]
         elif type=='images':
             cont = jsonDict.get('query-continue',None)
@@ -265,14 +264,26 @@ class WikiData:
             data = jsonDict.get('query', None).get('export', None).get('*', None)
             end = data.find("==") #finds end of introduction
             start = data.rfind("'''",0,end)
-            start = data.rfind("'''",0,start) #accounts for countries who name is not the exact title
+            start = data.rfind("'''",0,start) #accounts for countries whose name is not the exact title
             data = data[start: end]
-            print data.encode('utf-8')
+            proRegEx = re.compile('\(\{\{[^)?]*\)')
+            for m in proRegEx.finditer(data):
+                if data[m.start():m.start()+3]=='({{': #not sure why my regex is catching errors
+                    data = data[0:m.start()]+data[m.end():-1] #delete entirely
+            data.replace(article,'[REDACTED]')
         if cont!=None: #ignore continuations for now
             pass
-#            print 'C:',cont.encode('utf-8')
         return [data,cont]
-
+    
+    @staticmethod
+    def checkCountry(country, title):
+        '''
+        Returns true if it is a valid title.
+        '''
+        a = str([c for c in country.lower() if 'a'<=c<='z'])
+        b = str([c for c in title.lower() if 'a'<=c<='z'])
+        return b.find(a) == -1
+    
     def initializeGame(self):
         '''
         Returns all the needed information to start the game
@@ -307,7 +318,9 @@ class WikiData:
             clues = []
             while len(clues)<9:
                 c = random.choice(back)
-                if c not in clues: clues.append(c)
+                if c not in clues and self.checkCountry(article, c):
+                    print '\t',c.encode('utf-8')
+                    clues.append(c)
             return clues
 
     def isPerson(self, article):
@@ -380,18 +393,9 @@ class WikiData:
         NEED to implement
         '''
         text = self.getArticleLinks(article, 'export')
-# = "'''[^']*'''" #'''title'''->Redacted (just start from here, delete everything before it)
-#        citationsRegEx= "(&amp;lt;ref&amp;gt; | \) )? \{\{[^}]*\}\} (&amp;lt;ref&amp;gt; | \) )?"# ({{citation_data}})->''
-#        linkRegEx = "\[\[ [^\]] \]\]" #[[article]]->article #if [[name_of_wiki | word]] use word
-        #find(	sub[, start[, end]]) Return the lowest index in the string where substring sub is found, such that sub is contained in the range [start, end]. Optional arguments start and end are interpreted as in slice notation. Return -1 if sub is not found. 
-        #replace(	old, new[, count]) Return a copy of the string with all occurrences of substring old replaced by new. If the optional argument count is given, only the first count occurrences are replaced.
-#        text = '[REDACTED]'+text[text.find("'''")+len(article)+3, text.find("===")] #
-#        text = text.replace('[[','') 
-#        text = text.replace(']]','')
-
-        return []
-        
-        pass
+        art = self.queryDB(article)
+        images = art.get('images',None)
+        return [text, images[0]]
 
     def __repr__(self):
         '''
@@ -419,13 +423,13 @@ if __name__=='__main__':
     if PLAY:
         pass
     else:
-        w = WikiData('test')
+        w = WikiData('wikiwCache')
         for c in w.wikiCache.get('WhereInWiki'):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 if c.encode('utf-8')==c:
                     print '\n',c
-                    w.getClip(c)
+                    w.chooseClues(c)
                 
                 
 #        for c in w.wikiCache.get('WhereInWiki'):
